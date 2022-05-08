@@ -1,6 +1,10 @@
-from flask import Flask, jsonify, request
+from flask import Flask, request
+from flask_restful import Resource, Api
 import json
+from habilidades import Habilidades
+
 app = Flask(__name__)
+api = Api(app)
 
 # Lista estatica para manipulação de dados sem banco de dados
 desenvolvedores = [
@@ -20,10 +24,10 @@ desenvolvedores = [
         'Habilidade': ['Javascript', 'Angular']
      }
 ]
+
 #Devolve um desenvovedor pelo id, também altera e deleta um desenvolvedor por id
-@app.route('/dev/<int:id>/', methods=['GET', 'PUT', 'DELETE'])
-def desenvolvedor(id):
-    if request.method == 'GET':
+class Desenvolvedor(Resource):
+    def get(self, id):
         try:
             response = desenvolvedores[id]
         except IndexError:
@@ -32,26 +36,36 @@ def desenvolvedor(id):
         except Exception:
             error = 'Erro desconhecido. Procure o administrado!'
             response = {'status': 'Error!', 'mensagem': error}
-        return jsonify(response)
-    elif request.method == 'PUT':
+        return response
+
+    def put(self, id):
         dados = json.loads(request.data)
         desenvolvedores[id] = dados
-        return jsonify(dados)
-    elif request.method =='DELETE':
+        return dados
+
+    def delete(self, id):
         desenvolvedores.pop(id)
-        return jsonify({'status': 'sucesso', 'mensagem': 'registro excluido!'})
+        return {'Status': 'Sucesso!', 'mensagem': 'Registro Excluido'}
+
 
 # lista todos os desenvolvedores, e permite registrar um novo desenvolvedor
-@app.route('/dev/', methods=['POST', 'GET'])
-def lista_desenvolvedores():
-    if request.method == 'POST':
+class ListaDesenvolvedores(Resource):
+    def get(self):
+        return desenvolvedores
+
+    def post(self):
         dados = json.loads(request.data)
         posicao = len(desenvolvedores)
         dados['id'] = posicao
         desenvolvedores.append(dados)
-        return jsonify(desenvolvedores[posicao])
-    elif request.method == 'GET':
-        return jsonify(desenvolvedores)
+        return desenvolvedores[posicao]
+
+
+#Informando as rotas que estamos passando para cada requisição
+api.add_resource(Desenvolvedor, '/dev/<int:id>/')
+api.add_resource(ListaDesenvolvedores,  '/dev/')
+api.add_resource(Habilidades, '/habilidades/<int:id>/')
+
 
 
 if __name__ == '__main__':
